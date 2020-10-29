@@ -1,0 +1,7 @@
+apiVersion: meta.pkg.crossplane.io/v1alpha1
+kind: Provider
+metadata:
+  name: provider-in-cluster
+spec:
+  controller:
+    image: crossplane/provider-in-cluster-controller:VERSION
