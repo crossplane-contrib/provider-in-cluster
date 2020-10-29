@@ -27,7 +27,7 @@ The following tools are need on the host:
 
 ## Build
 
-You can build the Crossplane IBM Cloud Provider for the host platform by simply
+You can build the Crossplane In-Cluster Provider for the host platform by simply
 running the command below. Building in parallel with the `-j` option is
 recommended.
 
