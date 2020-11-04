@@ -1,0 +1,16 @@
+apiVersion: database.in-cluster.crossplane.io/v1alpha1
+kind: Postgres
+metadata:
+  name: "postgresdb"
+  namespace: "default"
+spec:
+  forProvider:
+    database: "test"
+    databaseSize: "1Gi"
+    storageClass: "manual"
+    masterUsername: "testuser"
+  providerConfigRef:
+    name: "provider-in-cluster"
+  writeConnectionSecretToRef:
+    name: "out-secret"
+    namespace: "default"

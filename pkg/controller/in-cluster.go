@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/database/postgres"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -29,6 +30,7 @@ import (
 func Setup(mgr ctrl.Manager, l logging.Logger) error {
 	for _, setup := range []func(ctrl.Manager, logging.Logger) error{
 		config.Setup,
+		postgres.SetupPostgres,
 	} {
 		if err := setup(mgr, l); err != nil {
 			return err
@@ -36,3 +38,4 @@ func Setup(mgr ctrl.Manager, l logging.Logger) error {
 	}
 	return nil
 }
+
