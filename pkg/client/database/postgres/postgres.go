@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"strings"
+
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -13,12 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 )
 
 const (
 	errGetPasswordSecretFailed = "cannot get password secret"
-	NamespacePrefixOpenShift = "openshift-"
+	NamespacePrefixOpenShift   = "openshift-"
 	defaultPostgresPort        = 5432
 )
 
@@ -37,7 +38,7 @@ type postgresClient struct {
 func (c postgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	pvc := v1.PersistentVolumeClaim{}
 	err := c.kube.Get(ctx, client.ObjectKey{
-		Namespace: "default",
+		Namespace: postgres.Namespace,
 		Name:      postgres.Name,
 	}, &pvc)
 	if err != nil {
@@ -49,8 +50,8 @@ func (c postgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.
 func (c postgresClient) DeleteBucketDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	dpl := appsv1.Deployment{}
 	err := c.kube.Get(ctx, client.ObjectKey{
-		Name: postgres.Name,
-		Namespace:      "default",
+		Name:      postgres.Name,
+		Namespace: postgres.Namespace,
 	}, &dpl)
 	if err != nil {
 		return nil
@@ -61,8 +62,8 @@ func (c postgresClient) DeleteBucketDeployment(ctx context.Context, postgres *v1
 func (c postgresClient) DeleteBucketService(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	svc := v1.Service{}
 	err := c.kube.Get(ctx, client.ObjectKey{
-		Name: postgres.Name,
-		Namespace:      "default",
+		Name:      postgres.Name,
+		Namespace: postgres.Namespace,
 	}, &svc)
 	if err != nil {
 		return nil
@@ -76,7 +77,7 @@ func NewRoleClient(kube client.Client) Client {
 
 func (c postgresClient) CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error) {
 	return controllerutil.CreateOrUpdate(ctx, c.kube, obj, func() error {
- 		return nil
+		return nil
 	})
 }
 
@@ -86,7 +87,7 @@ func (c postgresClient) ParseInputSecret(ctx context.Context, postgres v1alpha1.
 	}
 	nn := types.NamespacedName{
 		Name:      postgres.Spec.ForProvider.MasterPasswordSecretRef.Name,
-		Namespace: "default",
+		Namespace: postgres.Spec.ForProvider.MasterPasswordSecretRef.Namespace,
 	}
 	s := &v1.Secret{}
 	if err := c.kube.Get(ctx, nn, s); err != nil {
@@ -100,15 +101,15 @@ func MakePVCPostgres(postgres *v1alpha1.Postgres) *v1.PersistentVolumeClaim {
 	return &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      postgres.Name,
-			Namespace: "default",
+			Namespace: postgres.Namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PersistentVolumeClaim",
 			APIVersion: "v1",
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-			VolumeMode: &fs,
+			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+			VolumeMode:       &fs,
 			StorageClassName: postgres.Spec.ForProvider.StorageClass,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
@@ -131,7 +132,7 @@ func MakePostgresDeployment(ps *v1alpha1.Postgres, pw string) *appsv1.Deployment
 	depl := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ps.Name,
-			Namespace: "default",
+			Namespace: ps.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Strategy: appsv1.DeploymentStrategy{
@@ -242,7 +243,7 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 // create an environment variable referencing a secret
 func envVarFromValue(envVarName, value string) v1.EnvVar {
 	return v1.EnvVar{
-		Name: envVarName,
+		Name:  envVarName,
 		Value: value,
 	}
 }
@@ -251,7 +252,7 @@ func MakeDefaultPostgresService(ps *v1alpha1.Postgres) *v1.Service {
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ps.Name,
-			Namespace: "default",
+			Namespace: ps.Namespace,
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{

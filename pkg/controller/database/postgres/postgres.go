@@ -69,9 +69,12 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 		return managed.ExternalObservation{}, errors.New(errUnexpectedObject)
 	}
 
+	//initial defaults
+	initializeDefaults(ps)
+
 	// check deployment status
 	dpl := &appsv1.Deployment{}
-	err := e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: "default"}, dpl)
+	err := e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, dpl)
 	if err != nil {
 		errMsg := "failed to get postgres deployment"
 		e.logger.Debug("failed to get postgres deployment", "err", err)
@@ -97,7 +100,7 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 	}
 
 	svc := &v1.Service{}
-	err = e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: "default"}, svc)
+	err = e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, svc)
 	if err != nil {
 		errMsg := "failed to get postgres service"
 		e.logger.Debug("failed to get postgres service", "err", err)
@@ -106,6 +109,8 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 
 	ip := svc.Spec.ClusterIP
 	e.logger.Debug("postgres service", "ip", fmt.Sprintf("%+v", ip))
+
+	ps.SetConditions(runtimev1alpha1.Available())
 
 	return managed.ExternalObservation{ConnectionDetails: map[string][]byte{
 		runtimev1alpha1.ResourceCredentialsSecretEndpointKey: []byte(ip),
@@ -132,7 +137,6 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 			return managed.ExternalCreation{}, errors.Wrap(err, errMsg)
 		}
 	}
-	e.logger.Debug("password", "pw", password)
 
 	// deploy deployment
 	if _, err := e.client.CreateOrUpdate(ctx, postgres.MakePostgresDeployment(ps, password)); err != nil {
@@ -186,4 +190,31 @@ func generatePassword() (string, error) {
 		return "", errors.Wrap(err, "error generating password")
 	}
 	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
+}
+
+func strToPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func initializeDefaults(pg *v1alpha1.Postgres) bool {
+	updated := false
+	if pg.Namespace == "" {
+		pg.Namespace = "default"
+	}
+	if pg.Spec.ForProvider.StorageClass == nil {
+		pg.Spec.ForProvider.StorageClass = strToPtr("Standard")
+		updated = true
+	}
+	if pg.Spec.ForProvider.MasterUsername == nil {
+		pg.Spec.ForProvider.MasterUsername = strToPtr("postgres")
+		updated = true
+	}
+	if pg.Spec.ForProvider.Database == nil {
+		pg.Spec.ForProvider.Database = pg.Spec.ForProvider.MasterUsername
+		updated = true
+	}
+	return updated
 }
