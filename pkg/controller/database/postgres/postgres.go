@@ -3,6 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
 
 	"github.com/google/uuid"
@@ -35,15 +38,15 @@ const (
 // SetupPostgres adds a controller that reconciles Postgres instances.
 func SetupPostgres(mgr ctrl.Manager, l logging.Logger) error {
 	name := managed.ControllerName(v1alpha1.PostgresGroupKind)
-	postgressLogger := l.WithValues("controller", name)
+	postgresLogger := l.WithValues("controller", name)
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		For(&v1alpha1.Postgres{}).
 		Complete(managed.NewReconciler(mgr,
 			resource.ManagedKind(v1alpha1.PostgresGroupVersionKind),
-			managed.WithExternalConnecter(&connector{kube: mgr.GetClient(), newClientFn: postgres.NewRoleClient, logger: postgressLogger}),
+			managed.WithExternalConnecter(&connector{kube: mgr.GetClient(), newClientFn: postgres.NewRoleClient, logger: postgresLogger}),
 			managed.WithReferenceResolver(managed.NewAPISimpleReferenceResolver(mgr.GetClient())),
-			managed.WithLogger(postgressLogger),
+			managed.WithLogger(postgresLogger),
 			managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name)))))
 }
 
@@ -54,12 +57,21 @@ type connector struct {
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	return &external{client: c.newClientFn(c.kube), kube: c.kube, logger: c.logger}, nil
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	cs, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &external{client: c.newClientFn(c.kube), kube: c.kube, logger: c.logger, cs: cs}, nil
 }
 
 type external struct {
 	client postgres.Client
 	kube   client.Client
+	cs     kubernetes.Interface
 	logger logging.Logger
 }
 
@@ -87,7 +99,7 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 	// check if deployment is ready and return connection details
 	dplAvailable := false
 	for _, s := range dpl.Status.Conditions {
-		if (s.Type == appsv1.DeploymentAvailable || s.Type == appsv1.DeploymentProgressing) && s.Status == v1.ConditionTrue {
+		if (s.Type == appsv1.DeploymentAvailable) && s.Status == v1.ConditionTrue {
 			dplAvailable = true
 			break
 		}
@@ -192,12 +204,6 @@ func generatePassword() (string, error) {
 	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
 }
 
-func strToPtr(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
-}
 
 func initializeDefaults(pg *v1alpha1.Postgres) bool {
 	updated := false
@@ -205,11 +211,11 @@ func initializeDefaults(pg *v1alpha1.Postgres) bool {
 		pg.Namespace = "default"
 	}
 	if pg.Spec.ForProvider.StorageClass == nil {
-		pg.Spec.ForProvider.StorageClass = strToPtr("Standard")
+		pg.Spec.ForProvider.StorageClass = utils.String("Standard")
 		updated = true
 	}
 	if pg.Spec.ForProvider.MasterUsername == nil {
-		pg.Spec.ForProvider.MasterUsername = strToPtr("postgres")
+		pg.Spec.ForProvider.MasterUsername = utils.String("postgres")
 		updated = true
 	}
 	if pg.Spec.ForProvider.Database == nil {

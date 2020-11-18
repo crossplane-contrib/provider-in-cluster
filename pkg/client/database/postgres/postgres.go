@@ -3,7 +3,6 @@ package postgres
 import (
 	"strings"
 
-	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
@@ -15,6 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
 )
 
 const (
