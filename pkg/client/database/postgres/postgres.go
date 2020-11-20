@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -21,7 +22,7 @@ import (
 const (
 	errGetPasswordSecretFailed = "cannot get password secret"
 	NamespacePrefixOpenShift   = "openshift-"
-	defaultPostgresPort        = 5432
+	DefaultPostgresPort        = 5432
 )
 
 type Client interface {
@@ -185,7 +186,7 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 			Image: "postgres:13.0",
 			Ports: []v1.ContainerPort{
 				{
-					ContainerPort: int32(defaultPostgresPort),
+					ContainerPort: DefaultPostgresPort,
 					Protocol:      v1.ProtocolTCP,
 				},
 			},
@@ -215,7 +216,7 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 					TCPSocket: &v1.TCPSocketAction{
 						Port: intstr.IntOrString{
 							Type:   intstr.Int,
-							IntVal: int32(defaultPostgresPort),
+							IntVal: DefaultPostgresPort,
 						},
 					},
 				},
@@ -260,8 +261,8 @@ func MakeDefaultPostgresService(ps *v1alpha1.Postgres) *v1.Service {
 				{
 					Name:       "postgresql",
 					Protocol:   v1.ProtocolTCP,
-					Port:       int32(defaultPostgresPort),
-					TargetPort: intstr.FromInt(defaultPostgresPort),
+					Port:       int32(utils.IntValue(ps.Spec.ForProvider.Port)),
+					TargetPort: intstr.FromInt(DefaultPostgresPort),
 				},
 			},
 			Selector: map[string]string{"deployment": ps.Name},

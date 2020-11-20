@@ -30,6 +30,10 @@ type PostgresParameters struct {
 	// +optional
 	StorageClass *string `json:"storageClass,omitempty"`
 
+	// Port is the port number on which Postgres will listen for connections.
+	// +optional
+	Port *int `json:"port,omitempty"`
+
 	// MasterPasswordSecretRef references the secret that contains the password used
 	// in the creation of this RDS instance. If no reference is given, a password
 	// will be auto-generated.

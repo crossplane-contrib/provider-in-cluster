@@ -102,3 +102,14 @@ func StringValueFallback(s *string, fb string) string {
 	}
 	return *s
 }
+
+func Int(i int) *int {
+	return &i
+}
+
+func IntValue(i *int) int {
+	if i == nil {
+		return 0
+	}
+	return *i
+}

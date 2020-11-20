@@ -28,7 +28,7 @@ import (
 
 const (
 	errUnexpectedObject = "the managed resource is not an Postgres resource"
-
+	ResourceCredentialsSecretDatabaseKey = "database"
 	//errGet              = "failed to get Postgres with name"
 	//errCreate           = "failed to create the Postgres resource"
 	//errDelete           = "failed to delete the Postgres resource"
@@ -165,8 +165,8 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 		ConnectionDetails: map[string][]byte{
 			runtimev1alpha1.ResourceCredentialsSecretUserKey:     []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.MasterUsername)),
 			runtimev1alpha1.ResourceCredentialsSecretPasswordKey: []byte(password),
-			runtimev1alpha1.ResourceCredentialsSecretPortKey:     []byte("5432"),
-			"database": []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.Database)),
+			runtimev1alpha1.ResourceCredentialsSecretPortKey:     []byte(string(utils.IntValue(ps.Spec.ForProvider.Port))),
+			ResourceCredentialsSecretDatabaseKey: []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.Database)),
 		},
 	}, nil
 }
@@ -204,7 +204,6 @@ func generatePassword() (string, error) {
 	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
 }
 
-
 func initializeDefaults(pg *v1alpha1.Postgres) bool {
 	updated := false
 	if pg.Namespace == "" {
@@ -221,6 +220,9 @@ func initializeDefaults(pg *v1alpha1.Postgres) bool {
 	if pg.Spec.ForProvider.Database == nil {
 		pg.Spec.ForProvider.Database = pg.Spec.ForProvider.MasterUsername
 		updated = true
+	}
+	if pg.Spec.ForProvider.Port != nil {
+		pg.Spec.ForProvider.Port = utils.Int(postgres.DefaultPostgresPort)
 	}
 	return updated
 }
