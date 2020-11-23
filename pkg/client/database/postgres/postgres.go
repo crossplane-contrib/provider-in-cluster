@@ -1,3 +1,19 @@
+/*
+Copyright 2020 The Crossplane Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package postgres
 
 import (
@@ -137,14 +153,6 @@ func MakePVCPostgres(postgres *v1alpha1.Postgres) (*v1.PersistentVolumeClaim, er
 	}, nil
 }
 
-func int32Ptr(i int32) *int32 { return &i }
-func StringPtrToVal(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 func MakePostgresDeployment(ps *v1alpha1.Postgres, pw string) *appsv1.Deployment {
 	depl := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -155,7 +163,7 @@ func MakePostgresDeployment(ps *v1alpha1.Postgres, pw string) *appsv1.Deployment
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RecreateDeploymentStrategyType,
 			},
-			Replicas: int32Ptr(1),
+			Replicas: utils.Int32(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"deployment": ps.Name,
@@ -206,9 +214,9 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 				},
 			},
 			Env: []v1.EnvVar{
-				envVarFromValue("POSTGRES_USER", StringPtrToVal(ps.Spec.ForProvider.MasterUsername)),
+				envVarFromValue("POSTGRES_USER", utils.StringValue(ps.Spec.ForProvider.MasterUsername)),
 				envVarFromValue("POSTGRES_PASSWORD", pw),
-				envVarFromValue("POSTGRES_DB", StringPtrToVal(ps.Spec.ForProvider.Database)),
+				envVarFromValue("POSTGRES_DB", utils.StringValue(ps.Spec.ForProvider.Database)),
 			},
 			Resources: v1.ResourceRequirements{
 				Limits: v1.ResourceList{
