@@ -1,8 +1,10 @@
 package postgres
 
 import (
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 	"strings"
+
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -31,10 +33,19 @@ type Client interface {
 	DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error
 	DeleteBucketDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error
 	DeleteBucketService(ctx context.Context, postgres *v1alpha1.Postgres) error
+	GeneratePassword() (string, error)
 }
 
 type postgresClient struct {
 	kube client.Client
+}
+
+func (c postgresClient) GeneratePassword() (string, error) {
+	generatedPassword, err := uuid.NewRandom()
+	if err != nil {
+		return "", errors.Wrap(err, "error generating password")
+	}
+	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
 }
 
 func (c postgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
@@ -98,8 +109,12 @@ func (c postgresClient) ParseInputSecret(ctx context.Context, postgres v1alpha1.
 	return string(s.Data[postgres.Spec.ForProvider.MasterPasswordSecretRef.Key]), nil
 }
 
-func MakePVCPostgres(postgres *v1alpha1.Postgres) *v1.PersistentVolumeClaim {
+func MakePVCPostgres(postgres *v1alpha1.Postgres) (*v1.PersistentVolumeClaim, error) {
 	fs := v1.PersistentVolumeFilesystem
+	quan, err := resource.ParseQuantity(postgres.Spec.ForProvider.DatabaseSize)
+	if err != nil {
+		return nil, err
+	}
 	return &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      postgres.Name,
@@ -115,11 +130,11 @@ func MakePVCPostgres(postgres *v1alpha1.Postgres) *v1.PersistentVolumeClaim {
 			StorageClassName: postgres.Spec.ForProvider.StorageClass,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse(postgres.Spec.ForProvider.DatabaseSize),
+					v1.ResourceStorage: quan,
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func int32Ptr(i int32) *int32 { return &i }

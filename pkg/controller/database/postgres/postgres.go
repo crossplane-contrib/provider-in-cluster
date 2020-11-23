@@ -3,12 +3,13 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -27,12 +28,15 @@ import (
 )
 
 const (
-	errUnexpectedObject = "the managed resource is not an Postgres resource"
+	errUnexpectedObject                  = "the managed resource is not an Postgres resource"
 	ResourceCredentialsSecretDatabaseKey = "database"
-	//errGet              = "failed to get Postgres with name"
-	//errCreate           = "failed to create the Postgres resource"
-	//errDelete           = "failed to delete the Postgres resource"
-	//errUpdate           = "failed to update the Postgres resource"
+	errDelete                            = "failed to delete the Postgres resource"
+	errDeploymentMsg                     = "failed to get postgres deployment"
+	errServiceMsg                        = "failed to get postgres service"
+	errPVCCreateMsg                      = "failed to create or update postgres PVC"
+	errDeployCreateMsg                   = "failed to create or update postgres deployment"
+	errSVCCreateMsg                      = "failed to create or update postgres service"
+	errGeneratePasswordMsg               = "failed to generate potential postgres password"
 )
 
 // SetupPostgres adds a controller that reconciles Postgres instances.
@@ -88,12 +92,11 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 	dpl := &appsv1.Deployment{}
 	err := e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, dpl)
 	if err != nil {
-		errMsg := "failed to get postgres deployment"
-		e.logger.Debug("failed to get postgres deployment", "err", err)
+		e.logger.Debug(errDeploymentMsg, "err", err)
 		return managed.ExternalObservation{}, errors.Wrap(resource.Ignore(func(err error) bool {
 			errMsg := err.Error()
 			return strings.Contains(errMsg, "not found")
-		}, err), errMsg)
+		}, err), errDeploymentMsg)
 	}
 
 	// check if deployment is ready and return connection details
@@ -114,9 +117,8 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 	svc := &v1.Service{}
 	err = e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, svc)
 	if err != nil {
-		errMsg := "failed to get postgres service"
-		e.logger.Debug("failed to get postgres service", "err", err)
-		return managed.ExternalObservation{ResourceExists: true}, errors.Wrap(err, errMsg)
+		e.logger.Debug(errServiceMsg, "err", err)
+		return managed.ExternalObservation{ResourceExists: true}, errors.Wrap(err, errServiceMsg)
 	}
 
 	ip := svc.Spec.ClusterIP
@@ -134,39 +136,38 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errUnexpectedObject)
 	}
-	pvc := postgres.MakePVCPostgres(ps)
+	pvc, err := postgres.MakePVCPostgres(ps)
+	if err != nil {
+		return managed.ExternalCreation{}, errors.Wrap(err, errPVCCreateMsg)
+	}
 	e.logger.Debug("pvc make", "pvc", fmt.Sprintf("%+v", pvc))
 	if _, err := e.client.CreateOrUpdate(ctx, pvc); err != nil {
-		errMsg := fmt.Sprintf("failed to create or update postgres PVC for instance %s", ps.Name)
-		return managed.ExternalCreation{}, errors.Wrap(err, errMsg)
+		return managed.ExternalCreation{}, errors.Wrap(err, errPVCCreateMsg)
 	}
 	// deploy credentials secret
 	password, err := e.client.ParseInputSecret(ctx, *ps)
 	if err != nil || password == "" {
-		password, err = generatePassword()
+		password, err = e.client.GeneratePassword()
 		if err != nil {
-			errMsg := "failed to generate potential postgres password"
-			return managed.ExternalCreation{}, errors.Wrap(err, errMsg)
+			return managed.ExternalCreation{}, errors.Wrap(err, errGeneratePasswordMsg)
 		}
 	}
 
 	// deploy deployment
 	if _, err := e.client.CreateOrUpdate(ctx, postgres.MakePostgresDeployment(ps, password)); err != nil {
-		errMsg := fmt.Sprintf("failed to create or update postgres deployment for instance %s", ps.Name)
-		return managed.ExternalCreation{}, errors.Wrap(err, errMsg)
+		return managed.ExternalCreation{}, errors.Wrap(err, errDeployCreateMsg)
 	}
 	// deploy service
 	if _, err := e.client.CreateOrUpdate(ctx, postgres.MakeDefaultPostgresService(ps)); err != nil {
-		errMsg := fmt.Sprintf("failed to create or update postgres service for instance %s", ps.Name)
-		return managed.ExternalCreation{}, errors.Wrap(err, errMsg)
+		return managed.ExternalCreation{}, errors.Wrap(err, errSVCCreateMsg)
 	}
 
 	return managed.ExternalCreation{
 		ConnectionDetails: map[string][]byte{
 			runtimev1alpha1.ResourceCredentialsSecretUserKey:     []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.MasterUsername)),
 			runtimev1alpha1.ResourceCredentialsSecretPasswordKey: []byte(password),
-			runtimev1alpha1.ResourceCredentialsSecretPortKey:     []byte(string(utils.IntValue(ps.Spec.ForProvider.Port))),
-			ResourceCredentialsSecretDatabaseKey: []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.Database)),
+			runtimev1alpha1.ResourceCredentialsSecretPortKey:     []byte(strconv.Itoa(utils.IntValue(ps.Spec.ForProvider.Port))),
+			ResourceCredentialsSecretDatabaseKey:                 []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.Database)),
 		},
 	}, nil
 }
@@ -186,22 +187,14 @@ func (e *external) Delete(ctx context.Context, mgd resource.Managed) error {
 	}
 	err := e.client.DeleteBucketService(ctx, ps)
 	if err != nil {
-		return err
+		return errors.Wrap(err, errDelete)
 	}
 	err = e.client.DeleteBucketDeployment(ctx, ps)
 	if err != nil {
-		return err
+		return errors.Wrap(err, errDelete)
 	}
 	err = e.client.DeleteBucketPVC(ctx, ps)
-	return err
-}
-
-func generatePassword() (string, error) {
-	generatedPassword, err := uuid.NewRandom()
-	if err != nil {
-		return "", errors.Wrap(err, "error generating password")
-	}
-	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
+	return errors.Wrap(err, errDelete)
 }
 
 func initializeDefaults(pg *v1alpha1.Postgres) bool {
@@ -221,7 +214,7 @@ func initializeDefaults(pg *v1alpha1.Postgres) bool {
 		pg.Spec.ForProvider.Database = pg.Spec.ForProvider.MasterUsername
 		updated = true
 	}
-	if pg.Spec.ForProvider.Port != nil {
+	if pg.Spec.ForProvider.Port == nil {
 		pg.Spec.ForProvider.Port = utils.Int(postgres.DefaultPostgresPort)
 	}
 	return updated
