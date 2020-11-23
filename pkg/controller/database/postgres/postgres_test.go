@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"testing"
 
-
 	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
@@ -104,7 +103,7 @@ func withConditions(conditions ...runtimev1alpha1.Condition) PostgresModifier {
 	}
 }
 
-// Bucket creates a v1beta1 Bucket for use in testing
+// BucPostgresket creates a v1alpha1 Postgres for use in testing
 func Postgres(m ...PostgresModifier) *v1alpha1.Postgres {
 	cr := &v1alpha1.Postgres{
 		Spec: v1alpha1.PostgresSpec{
@@ -509,7 +508,7 @@ func TestDelete(t *testing.T) {
 		"ServiceDeleteError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockDeleteBucketService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return errBoom
 					},
 				},
@@ -523,10 +522,10 @@ func TestDelete(t *testing.T) {
 		"DeploymentDeleteError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockDeleteBucketService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
-					MockDeleteBucketDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return errBoom
 					},
 				},
@@ -540,13 +539,13 @@ func TestDelete(t *testing.T) {
 		"PVCDeleteError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockDeleteBucketService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
-					MockDeleteBucketDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
-					MockDeleteBucketPVC: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresPVC: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return errBoom
 					},
 				},
@@ -560,13 +559,13 @@ func TestDelete(t *testing.T) {
 		"ValidInput": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockDeleteBucketService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresService: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
-					MockDeleteBucketDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresDeployment: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
-					MockDeleteBucketPVC: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
+					MockDeletePostgresPVC: func(ctx context.Context, postgres *v1alpha1.Postgres) error {
 						return nil
 					},
 				},

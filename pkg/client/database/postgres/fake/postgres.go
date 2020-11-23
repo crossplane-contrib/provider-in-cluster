@@ -27,12 +27,12 @@ import (
 var _ postgres.Client = &MockPostgresClient{}
 
 type MockPostgresClient struct {
-	MockCreateOrUpdate         func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error)
-	MockParseInputSecret       func(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
-	MockDeleteBucketPVC        func(ctx context.Context, postgres *v1alpha1.Postgres) error
-	MockDeleteBucketDeployment func(ctx context.Context, postgres *v1alpha1.Postgres) error
-	MockDeleteBucketService    func(ctx context.Context, postgres *v1alpha1.Postgres) error
-	MockGeneratePassword       func() (string, error)
+	MockCreateOrUpdate           func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error)
+	MockParseInputSecret         func(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
+	MockDeletePostgresPVC        func(ctx context.Context, postgres *v1alpha1.Postgres) error
+	MockDeletePostgresDeployment func(ctx context.Context, postgres *v1alpha1.Postgres) error
+	MockDeletePostgresService    func(ctx context.Context, postgres *v1alpha1.Postgres) error
+	MockGeneratePassword         func() (string, error)
 }
 
 func (c MockPostgresClient) GeneratePassword() (string, error) {
@@ -43,16 +43,16 @@ func (c MockPostgresClient) ParseInputSecret(ctx context.Context, postgres v1alp
 	return c.MockParseInputSecret(ctx, postgres)
 }
 
-func (c MockPostgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
-	return c.MockDeleteBucketPVC(ctx, postgres)
+func (c MockPostgresClient) DeletePostgresPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
+	return c.MockDeletePostgresPVC(ctx, postgres)
 }
 
-func (c MockPostgresClient) DeleteBucketDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error {
-	return c.MockDeleteBucketDeployment(ctx, postgres)
+func (c MockPostgresClient) DeletePostgresDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error {
+	return c.MockDeletePostgresDeployment(ctx, postgres)
 }
 
-func (c MockPostgresClient) DeleteBucketService(ctx context.Context, postgres *v1alpha1.Postgres) error {
-	return c.MockDeleteBucketService(ctx, postgres)
+func (c MockPostgresClient) DeletePostgresService(ctx context.Context, postgres *v1alpha1.Postgres) error {
+	return c.MockDeletePostgresService(ctx, postgres)
 }
 
 func (c MockPostgresClient) CreateOrUpdate(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {

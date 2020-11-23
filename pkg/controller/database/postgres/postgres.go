@@ -180,10 +180,10 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 
 	return managed.ExternalCreation{
 		ConnectionDetails: map[string][]byte{
-			runtimev1alpha1.ResourceCredentialsSecretUserKey:     []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.MasterUsername)),
+			runtimev1alpha1.ResourceCredentialsSecretUserKey:     []byte(utils.StringValue(ps.Spec.ForProvider.MasterUsername)),
 			runtimev1alpha1.ResourceCredentialsSecretPasswordKey: []byte(password),
 			runtimev1alpha1.ResourceCredentialsSecretPortKey:     []byte(strconv.Itoa(utils.IntValue(ps.Spec.ForProvider.Port))),
-			ResourceCredentialsSecretDatabaseKey:                 []byte(postgres.StringPtrToVal(ps.Spec.ForProvider.Database)),
+			ResourceCredentialsSecretDatabaseKey:                 []byte(utils.StringValue(ps.Spec.ForProvider.Database)),
 		},
 	}, nil
 }
@@ -201,15 +201,15 @@ func (e *external) Delete(ctx context.Context, mgd resource.Managed) error {
 	if !ok {
 		return errors.New(errUnexpectedObject)
 	}
-	err := e.client.DeleteBucketService(ctx, ps)
+	err := e.client.DeletePostgresService(ctx, ps)
 	if err != nil {
 		return errors.Wrap(err, errDelete)
 	}
-	err = e.client.DeleteBucketDeployment(ctx, ps)
+	err = e.client.DeletePostgresDeployment(ctx, ps)
 	if err != nil {
 		return errors.Wrap(err, errDelete)
 	}
-	err = e.client.DeleteBucketPVC(ctx, ps)
+	err = e.client.DeletePostgresPVC(ctx, ps)
 	return errors.Wrap(err, errDelete)
 }
 

@@ -41,14 +41,15 @@ const (
 	errGetPasswordSecretFailed = "cannot get password secret"
 	NamespacePrefixOpenShift   = "openshift-"
 	DefaultPostgresPort        = 5432
+	PostgresImageTag           = "postgres:13.0"
 )
 
 type Client interface {
 	CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error)
 	ParseInputSecret(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
-	DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error
-	DeleteBucketDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error
-	DeleteBucketService(ctx context.Context, postgres *v1alpha1.Postgres) error
+	DeletePostgresPVC(ctx context.Context, postgres *v1alpha1.Postgres) error
+	DeletePostgresDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error
+	DeletePostgresService(ctx context.Context, postgres *v1alpha1.Postgres) error
 	GeneratePassword() (string, error)
 }
 
@@ -64,7 +65,7 @@ func (c postgresClient) GeneratePassword() (string, error) {
 	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
 }
 
-func (c postgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
+func (c postgresClient) DeletePostgresPVC(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	pvc := v1.PersistentVolumeClaim{}
 	err := c.kube.Get(ctx, client.ObjectKey{
 		Namespace: postgres.Namespace,
@@ -76,7 +77,7 @@ func (c postgresClient) DeleteBucketPVC(ctx context.Context, postgres *v1alpha1.
 	return c.kube.Delete(ctx, &pvc)
 }
 
-func (c postgresClient) DeleteBucketDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error {
+func (c postgresClient) DeletePostgresDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	dpl := appsv1.Deployment{}
 	err := c.kube.Get(ctx, client.ObjectKey{
 		Name:      postgres.Name,
@@ -88,7 +89,7 @@ func (c postgresClient) DeleteBucketDeployment(ctx context.Context, postgres *v1
 	return c.kube.Delete(ctx, &dpl)
 }
 
-func (c postgresClient) DeleteBucketService(ctx context.Context, postgres *v1alpha1.Postgres) error {
+func (c postgresClient) DeletePostgresService(ctx context.Context, postgres *v1alpha1.Postgres) error {
 	svc := v1.Service{}
 	err := c.kube.Get(ctx, client.ObjectKey{
 		Name:      postgres.Name,
@@ -206,7 +207,7 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 	return []v1.Container{
 		{
 			Name:  ps.Name,
-			Image: "postgres:13.0",
+			Image: PostgresImageTag,
 			Ports: []v1.ContainerPort{
 				{
 					ContainerPort: DefaultPostgresPort,
