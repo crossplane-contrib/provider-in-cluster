@@ -10,6 +10,7 @@ type PostgresParameters struct {
 
 	// DatabaseSize is the size of the database in a valid Go notation
 	// e.g., 1Gi
+	// +immutable
 	DatabaseSize string `json:"databaseSize"`
 
 	// MasterUsername is the name for the master user.
@@ -24,14 +25,17 @@ type PostgresParameters struct {
 
 	// Database specifies the default database to be created with the image
 	// +optional
+	// +immutable
 	Database *string `json:"database,omitempty"`
 
 	// StorageClass specifies the storage classed used for the PVC.
 	// +optional
+	// +immutable
 	StorageClass *string `json:"storageClass,omitempty"`
 
 	// Port is the port number on which Postgres will listen for connections.
 	// +optional
+	// +immutable
 	Port *int `json:"port,omitempty"`
 
 	// MasterPasswordSecretRef references the secret that contains the password used

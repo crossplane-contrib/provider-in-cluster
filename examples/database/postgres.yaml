@@ -2,7 +2,6 @@ apiVersion: database.in-cluster.crossplane.io/v1alpha1
 kind: Postgres
 metadata:
   name: "postgresdb"
-  namespace: "default"
 spec:
   forProvider:
     database: "test"

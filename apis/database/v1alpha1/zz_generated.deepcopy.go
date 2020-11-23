@@ -117,6 +117,11 @@ func (in *PostgresParameters) DeepCopyInto(out *PostgresParameters) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Port != nil {
+		in, out := &in.Port, &out.Port
+		*out = new(int)
+		**out = **in
+	}
 	if in.MasterPasswordSecretRef != nil {
 		in, out := &in.MasterPasswordSecretRef, &out.MasterPasswordSecretRef
 		*out = new(corev1alpha1.SecretKeySelector)

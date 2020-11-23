@@ -79,6 +79,9 @@ spec:
                 masterUsername:
                   description: 'MasterUsername is the name for the master user. Constraints:    * Required for PostgreSQL.    * Must be 1 to 63 letters or numbers.    * First character must be a letter.    * Cannot be a reserved word for the chosen database engine.'
                   type: string
+                port:
+                  description: Port is the port number on which Postgres will listen for connections.
+                  type: integer
                 storageClass:
                   description: StorageClass specifies the storage classed used for the PVC.
                   type: string

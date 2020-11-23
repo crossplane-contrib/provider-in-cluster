@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	errUnexpectedObject                  = "the managed resource is not an Postgres resource"
+	errUnexpectedObject                  = "the managed resource is not a Postgres resource"
 	ResourceCredentialsSecretDatabaseKey = "database"
 	errDelete                            = "failed to delete the Postgres resource"
 	errDeploymentMsg                     = "failed to get postgres deployment"
@@ -101,7 +101,7 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 		return managed.ExternalObservation{}, errors.New(errUnexpectedObject)
 	}
 
-	//initial defaults
+	// set initial default values
 	initializeDefaults(ps)
 
 	// check deployment status
@@ -109,16 +109,13 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 	err := e.kube.Get(ctx, types.NamespacedName{Name: ps.Name, Namespace: ps.Namespace}, dpl)
 	if err != nil {
 		e.logger.Debug(errDeploymentMsg, "err", err)
-		return managed.ExternalObservation{}, errors.Wrap(resource.Ignore(func(err error) bool {
-			errMsg := err.Error()
-			return strings.Contains(errMsg, "not found")
-		}, err), errDeploymentMsg)
+		return managed.ExternalObservation{}, errors.Wrap(resource.IgnoreNotFound(err), errDeploymentMsg)
 	}
 
 	// check if deployment is ready and return connection details
 	dplAvailable := false
 	for _, s := range dpl.Status.Conditions {
-		if (s.Type == appsv1.DeploymentAvailable) && s.Status == v1.ConditionTrue {
+		if s.Type == appsv1.DeploymentAvailable && s.Status == v1.ConditionTrue {
 			dplAvailable = true
 			break
 		}
@@ -156,7 +153,6 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 	if err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errPVCCreateMsg)
 	}
-	e.logger.Debug("pvc make", "pvc", fmt.Sprintf("%+v", pvc))
 	if _, err := e.client.CreateOrUpdate(ctx, pvc); err != nil {
 		return managed.ExternalCreation{}, errors.Wrap(err, errPVCCreateMsg)
 	}
@@ -209,13 +205,13 @@ func (e *external) Delete(ctx context.Context, mgd resource.Managed) error {
 	if err != nil {
 		return errors.Wrap(err, errDelete)
 	}
-	err = e.client.DeletePostgresPVC(ctx, ps)
-	return errors.Wrap(err, errDelete)
+	return errors.Wrap(e.client.DeletePostgresPVC(ctx, ps), errDelete)
 }
 
 func initializeDefaults(pg *v1alpha1.Postgres) bool {
 	updated := false
-	if pg.Namespace == "" {
+	// We need to set the default namespace here for the PV/PVC.
+	if strings.TrimSpace(pg.Namespace) == "" {
 		pg.Namespace = "default"
 	}
 	if pg.Spec.ForProvider.StorageClass == nil {
