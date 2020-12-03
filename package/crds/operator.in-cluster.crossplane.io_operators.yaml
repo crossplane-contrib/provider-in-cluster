@@ -4,7 +4,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.3.0
   creationTimestamp: null
-  name: postgres.database.in-cluster.crossplane.io
+  name: operators.operator.in-cluster.crossplane.io
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=='Ready')].status
@@ -16,22 +16,22 @@ spec:
   - JSONPath: .metadata.creationTimestamp
     name: AGE
     type: date
-  group: database.in-cluster.crossplane.io
+  group: operator.in-cluster.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - aws
-    kind: Postgres
-    listKind: PostgresList
-    plural: postgres
-    singular: postgres
+    kind: Operator
+    listKind: OperatorList
+    plural: operators
+    singular: operator
   scope: Cluster
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: An Postgres is a managed resource that represents a Postgres database.
+      description: An Operator is a managed resource that represents an OLM Operator.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -42,7 +42,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: An PostgresSpec defines the desired state of an Postgres.
+          description: An OperatorSpec defines the desired state of an Operator.
           properties:
             deletionPolicy:
               description: DeletionPolicy specifies what will happen to the underlying external when this managed resource is deleted - either "Delete" or "Orphan" the external resource. The "Delete" policy is the default when no policy is specified.
@@ -51,42 +51,21 @@ spec:
               - Delete
               type: string
             forProvider:
-              description: PostgresParameters define the desired state of an AWS IAM Role.
+              description: OperatorParameters contains the user defined values for an operator.
               properties:
-                database:
-                  description: Database specifies the default database to be created with the image
+                catalogSource:
                   type: string
-                databaseSize:
-                  description: DatabaseSize is the size of the database in a valid Go notation e.g., 1Gi
+                catalogSourceNamespace:
                   type: string
-                masterPasswordSecretRef:
-                  description: MasterPasswordSecretRef references the secret that contains the password used in the creation of this RDS instance. If no reference is given, a password will be auto-generated.
-                  properties:
-                    key:
-                      description: The key to select.
-                      type: string
-                    name:
-                      description: Name of the secret.
-                      type: string
-                    namespace:
-                      description: Namespace of the secret.
-                      type: string
-                  required:
-                  - key
-                  - name
-                  - namespace
-                  type: object
-                masterUsername:
-                  description: 'MasterUsername is the name for the master user. Constraints:    * Required for PostgreSQL.    * Must be 1 to 63 letters or numbers.    * First character must be a letter.    * Cannot be a reserved word for the chosen database engine.'
+                channel:
                   type: string
-                port:
-                  description: Port is the port number on which Postgres will listen for connections.
-                  type: integer
-                storageClass:
-                  description: StorageClass specifies the storage classed used for the PVC.
+                operatorName:
                   type: string
               required:
-              - databaseSize
+              - catalogSource
+              - catalogSourceNamespace
+              - channel
+              - operatorName
               type: object
             providerConfigRef:
               description: ProviderConfigReference specifies how the provider that will be used to create, observe, update, and delete this managed resource should be configured.
@@ -126,13 +105,7 @@ spec:
           description: An PostgresStatus represents the observed state of an Postgres.
           properties:
             atProvider:
-              description: PostgresExternalStatus keeps the state for the external resource
-              properties:
-                pvcStatus:
-                  description: The status of the PVC for this Postgres database
-                  type: string
-              required:
-              - pvcStatus
+              description: OperatorExternalStatus keeps the state for the external resource
               type: object
             conditions:
               description: Conditions of the resource.

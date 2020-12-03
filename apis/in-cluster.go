@@ -18,9 +18,12 @@ limitations under the License.
 package apis
 
 import (
+	fwv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	databasev1alpha1 "github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
+	operatorv1alpha1 "github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
 	"github.com/crossplane-contrib/provider-in-cluster/apis/v1beta1"
 )
 
@@ -29,6 +32,9 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		v1beta1.SchemeBuilder.AddToScheme,
 		databasev1alpha1.SchemeBuilder.AddToScheme,
+		operatorv1alpha1.SchemeBuilder.AddToScheme,
+		operatorsv1.SchemeBuilder.AddToScheme,
+		fwv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 

@@ -66,7 +66,7 @@ type PostgresStatus struct {
 
 // +kubebuilder:object:root=true
 
-// An Postgres is a managed resource that represents an AWS IAM Role.
+// An Postgres is a managed resource that represents a Postgres database.
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
@@ -82,7 +82,7 @@ type Postgres struct {
 
 // +kubebuilder:object:root=true
 
-// PostgresList contains a list of IAMRoles
+// PostgresList contains a list of Postgres databases
 type PostgresList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
