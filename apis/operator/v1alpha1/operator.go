@@ -26,15 +26,9 @@ type OperatorSpec struct {
 	ForProvider                  OperatorParameters `json:"forProvider"`
 }
 
-// OperatorExternalStatus keeps the state for the external resource
-type OperatorExternalStatus struct {
-
-}
-
-// An PostgresStatus represents the observed state of an Postgres.
+// An OperatorStatus represents the observed state of an Operator.
 type OperatorStatus struct {
 	runtimev1alpha1.ResourceStatus `json:",inline"`
-	AtProvider                     OperatorExternalStatus `json:"atProvider"`
 }
 
 // +kubebuilder:object:root=true

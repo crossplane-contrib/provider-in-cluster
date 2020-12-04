@@ -42,7 +42,7 @@ GO111MODULE = on
 # ====================================================================================
 # Setup Images
 
-DOCKER_REGISTRY = krishchow
+DOCKER_REGISTRY = crossplane
 IMAGES = provider-in-cluster provider-in-cluster-controller
 -include build/makelib/image.mk
 

@@ -19,10 +19,10 @@ package operator
 import (
 	"context"
 	"fmt"
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
+	"strings"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -37,10 +37,11 @@ import (
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/client/olm/operator"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 )
 
 const (
-	errUnexpectedObject                  = "the managed resource is not a Postgres resource"
+	errUnexpectedObject = "the managed resource is not a Postgres resource"
 )
 
 // SetupOperator adds a controller that reconciles Operators.
@@ -156,7 +157,6 @@ func (e *external) Delete(ctx context.Context, mgd resource.Managed) error {
 
 	return e.client.DeleteSubscription(ctx, op)
 }
-
 
 func initializeDefaults(op *v1alpha1.Operator) bool {
 	updated := false

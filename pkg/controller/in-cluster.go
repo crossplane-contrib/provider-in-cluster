@@ -17,13 +17,12 @@ limitations under the License.
 package controller
 
 import (
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/database/postgres"
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/olm/operator"
+	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/config"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/database/postgres"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/olm/operator"
 )
 
 // Setup creates all in-cluster controllers with the supplied logger and adds

@@ -1,5 +1,5 @@
 apiVersion: database.in-cluster.crossplane.io/v1alpha1
-kind: Operator
+kind: Postgres
 metadata:
   name: "postgresdb"
 spec:

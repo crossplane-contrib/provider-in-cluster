@@ -18,32 +18,37 @@ package operator
 
 import (
 	"context"
-	"github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
+
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	operaterv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
 )
 
 var _ Client = &operatorClient{}
 
+// Client is the interface for the operator client
 type Client interface {
 	CreateOperator(ctx context.Context, obj *v1alpha1.Operator) error
 	GetPackageManifest(ctx context.Context, obj *v1alpha1.Operator) (*operatorsv1.PackageManifest, error)
 	ParsePackageManifest(op *v1alpha1.Operator, obj *operatorsv1.PackageManifest) *string
 	CheckCSV(ctx context.Context, csv string, op *v1alpha1.Operator) (bool, bool)
-	DeleteCSV (ctx context.Context, csv string, op *v1alpha1.Operator) error
-	DeleteSubscription (ctx context.Context, op *v1alpha1.Operator) error
+	DeleteCSV(ctx context.Context, csv string, op *v1alpha1.Operator) error
+	DeleteSubscription(ctx context.Context, op *v1alpha1.Operator) error
 }
 
+// operatorClient is the implementation for the operator client
 type operatorClient struct {
-	kube client.Client
+	kube   client.Client
 	logger logging.Logger
 	client versioned.Interface
 }
 
+// NewClient creates the client for the openshift controller
 func NewClient(kube client.Client, logger logging.Logger, p versioned.Interface) Client {
 	return operatorClient{kube: kube, logger: logger, client: p}
 }
@@ -70,8 +75,7 @@ func (o operatorClient) ParsePackageManifest(op *v1alpha1.Operator, obj *operato
 	var channel *operatorsv1.PackageChannel = nil
 	for _, v := range obj.Status.Channels {
 		if v.Name == op.Spec.ForProvider.Channel {
-			channel = &v
-			break
+			return &v.CurrentCSV
 		}
 	}
 	o.logger.Debug("ParsePackageManifest", "PM", obj)
@@ -93,7 +97,7 @@ func (o operatorClient) CheckCSV(ctx context.Context, csv string, op *v1alpha1.O
 	return true, cluster.Status.Phase == operaterv1alpha1.CSVPhaseSucceeded
 }
 
-func (o operatorClient) DeleteCSV (ctx context.Context, csv string, op *v1alpha1.Operator) error {
+func (o operatorClient) DeleteCSV(ctx context.Context, csv string, op *v1alpha1.Operator) error {
 	cluster := operaterv1alpha1.ClusterServiceVersion{}
 	err := o.kube.Get(ctx, client.ObjectKey{
 		Namespace: op.Namespace,
@@ -105,7 +109,7 @@ func (o operatorClient) DeleteCSV (ctx context.Context, csv string, op *v1alpha1
 	return o.kube.Delete(ctx, &cluster)
 }
 
-func (o operatorClient) DeleteSubscription (ctx context.Context, op *v1alpha1.Operator) error {
+func (o operatorClient) DeleteSubscription(ctx context.Context, op *v1alpha1.Operator) error {
 	cluster := operaterv1alpha1.Subscription{}
 	err := o.kube.Get(ctx, client.ObjectKey{
 		Namespace: op.Namespace,

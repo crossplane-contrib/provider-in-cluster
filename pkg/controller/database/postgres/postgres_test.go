@@ -49,13 +49,15 @@ var (
 
 	DatabaseSize  = "1Gi"
 	PostgresName  = "postgresdb"
-	serviceIp     = "0.0.0.0"
+	serviceIP     = "0.0.0.0"
 	userPass      = "password"
 	generatedPass = "123asdf"
 	username      = "postgres"
 	database      = "postgres"
 	defaultPort   = 5432
 	sc            = "Standard"
+	deployment    = "*v1.Deployment"
+	service       = "*v1.Service"
 )
 
 type args struct {
@@ -179,7 +181,7 @@ func TestObserve(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 						switch reflect.TypeOf(obj).String() {
-						case "*v1.Deployment":
+						case deployment:
 							dpl := obj.(*appsv1.Deployment)
 							dpl.Status.Conditions = []appsv1.DeploymentCondition{
 								{
@@ -188,7 +190,7 @@ func TestObserve(t *testing.T) {
 								},
 							}
 							return nil
-						case "*v1.Service":
+						case service:
 							return errBoom
 						default:
 							return nil
@@ -208,7 +210,7 @@ func TestObserve(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 						switch reflect.TypeOf(obj).String() {
-						case "*v1.Deployment":
+						case deployment:
 							dpl := obj.(*appsv1.Deployment)
 							dpl.Status.Conditions = []appsv1.DeploymentCondition{
 								{
@@ -217,9 +219,9 @@ func TestObserve(t *testing.T) {
 								},
 							}
 							return nil
-						case "*v1.Service":
+						case service:
 							svc := obj.(*v1.Service)
-							svc.Spec.ClusterIP = serviceIp
+							svc.Spec.ClusterIP = serviceIP
 							return nil
 						default:
 							return nil
@@ -231,7 +233,7 @@ func TestObserve(t *testing.T) {
 			want: want{
 				cr: Postgres(withConditions(runtimev1alpha1.Available())),
 				result: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: map[string][]byte{
-					runtimev1alpha1.ResourceCredentialsSecretEndpointKey: []byte(serviceIp),
+					runtimev1alpha1.ResourceCredentialsSecretEndpointKey: []byte(serviceIP),
 				}},
 				err: nil,
 			},
@@ -241,7 +243,7 @@ func TestObserve(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
 						switch reflect.TypeOf(obj).String() {
-						case "*v1.Deployment":
+						case deployment:
 							dpl := obj.(*appsv1.Deployment)
 							dpl.Status.Conditions = []appsv1.DeploymentCondition{
 								{
@@ -250,9 +252,9 @@ func TestObserve(t *testing.T) {
 								},
 							}
 							return nil
-						case "*v1.Service":
+						case service:
 							svc := obj.(*v1.Service)
-							svc.Spec.ClusterIP = serviceIp
+							svc.Spec.ClusterIP = serviceIP
 							return nil
 						default:
 							return nil
@@ -264,7 +266,7 @@ func TestObserve(t *testing.T) {
 			want: want{
 				cr: Postgres(withConditions(runtimev1alpha1.Available())),
 				result: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: map[string][]byte{
-					runtimev1alpha1.ResourceCredentialsSecretEndpointKey: []byte(serviceIp),
+					runtimev1alpha1.ResourceCredentialsSecretEndpointKey: []byte(serviceIP),
 				}},
 				err: nil,
 			},
@@ -367,9 +369,9 @@ func TestCreate(t *testing.T) {
 				pg: &fake.MockPostgresClient{
 					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
-						case "*v1.Deployment":
+						case deployment:
 							return controllerutil.OperationResultNone, errBoom
-						case "*v1.Service":
+						case service:
 							return controllerutil.OperationResultNone, nil
 						default:
 							return controllerutil.OperationResultNone, nil
@@ -394,9 +396,9 @@ func TestCreate(t *testing.T) {
 				pg: &fake.MockPostgresClient{
 					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
-						case "*v1.Deployment":
+						case deployment:
 							return controllerutil.OperationResultNone, errBoom
-						case "*v1.Service":
+						case service:
 							return controllerutil.OperationResultNone, nil
 						default:
 							return controllerutil.OperationResultNone, nil
@@ -418,9 +420,9 @@ func TestCreate(t *testing.T) {
 				pg: &fake.MockPostgresClient{
 					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
-						case "*v1.Deployment":
+						case deployment:
 							return controllerutil.OperationResultNone, nil
-						case "*v1.Service":
+						case service:
 							return controllerutil.OperationResultNone, errBoom
 						default:
 							return controllerutil.OperationResultNone, nil

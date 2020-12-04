@@ -102,11 +102,8 @@ spec:
           - forProvider
           type: object
         status:
-          description: An PostgresStatus represents the observed state of an Postgres.
+          description: An OperatorStatus represents the observed state of an Operator.
           properties:
-            atProvider:
-              description: OperatorExternalStatus keeps the state for the external resource
-              type: object
             conditions:
               description: Conditions of the resource.
               items:
@@ -135,8 +132,6 @@ spec:
                 - type
                 type: object
               type: array
-          required:
-          - atProvider
           type: object
       required:
       - spec
