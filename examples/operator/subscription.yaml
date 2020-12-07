@@ -1,0 +1,11 @@
+apiVersion: operator.in-cluster.crossplane.io/v1alpha1
+kind: Operator
+metadata:
+  name: my-project-quay
+  namespace: default
+spec:
+  forProvider:
+    channel: stable
+    operatorName: rh-quay-operator
+    catalogSource: krishchow-catalog-source
+    catalogSourceNamespace: olm

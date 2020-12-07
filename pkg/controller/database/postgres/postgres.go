@@ -22,14 +22,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
@@ -41,18 +40,21 @@ import (
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/client/database/postgres"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 )
 
 const (
-	errUnexpectedObject                  = "the managed resource is not a Postgres resource"
+	errUnexpectedObject    = "the managed resource is not a Postgres resource" //nolint:golint
+	errDelete              = "failed to delete the Postgres resource"          //nolint:golint
+	errDeploymentMsg       = "failed to get postgres deployment"               //nolint:golint
+	errServiceMsg          = "failed to get postgres service"                  //nolint:golint
+	errPVCCreateMsg        = "failed to create or update postgres PVC"         //nolint:golint
+	errDeployCreateMsg     = "failed to create or update postgres deployment"  //nolint:golint
+	errSVCCreateMsg        = "failed to create or update postgres service"     //nolint:golint
+	errGeneratePasswordMsg = "failed to generate potential postgres password"  //nolint:golint
+
+	// ResourceCredentialsSecretDatabaseKey is the key for the connection secret database
 	ResourceCredentialsSecretDatabaseKey = "database"
-	errDelete                            = "failed to delete the Postgres resource"
-	errDeploymentMsg                     = "failed to get postgres deployment"
-	errServiceMsg                        = "failed to get postgres service"
-	errPVCCreateMsg                      = "failed to create or update postgres PVC"
-	errDeployCreateMsg                   = "failed to create or update postgres deployment"
-	errSVCCreateMsg                      = "failed to create or update postgres service"
-	errGeneratePasswordMsg               = "failed to generate potential postgres password"
 )
 
 // SetupPostgres adds a controller that reconciles Postgres instances.

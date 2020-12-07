@@ -19,8 +19,9 @@ package utils
 import (
 	"bytes"
 	"context"
-	"github.com/pkg/errors"
 	"io"
+
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
+// ExecIntoPod is used to select
 func ExecIntoPod(client kubernetes.Interface, dpl *appsv1.Deployment, cmd string) error {
 	command := []string{"/bin/bash", "-c", cmd}
 	pod, err := getDeploymentPod(client, dpl)
@@ -82,22 +84,25 @@ func exec(cs kubernetes.Interface, command []string, pod, ns string) (*string, *
 	return String(stdout.String()), String(stderr.String()), nil
 }
 
-func getDeploymentPod(cl kubernetes.Interface, dpl *appsv1.Deployment) (podName string, err error) {
+func getDeploymentPod(cl kubernetes.Interface, dpl *appsv1.Deployment) (string, error) {
 	name := dpl.Name
 	ns := dpl.Namespace
 	api := cl.CoreV1()
 	listOptions := metav1.ListOptions{
 		LabelSelector: "deployment=" + name,
 	}
-	podList, _ := api.Pods(ns).List(context.Background(), listOptions)
-	podListItems := podList.Items
-	if len(podListItems) == 0 {
+	podList, err := api.Pods(ns).List(context.Background(), listOptions)
+	if err != nil {
 		return "", err
 	}
-	podName = podListItems[0].Name
-	return podName, nil
+	podListItems := podList.Items
+	if len(podListItems) == 0 {
+		return "", nil
+	}
+	return podListItems[0].Name, nil
 }
 
+// String is a utility function converting a string to a *string
 func String(s string) *string {
 	if s == "" {
 		return nil
@@ -105,6 +110,7 @@ func String(s string) *string {
 	return &s
 }
 
+// StringValue is a utility function converting a *string to a string
 func StringValue(s *string) string {
 	if s == nil {
 		return ""
@@ -112,6 +118,7 @@ func StringValue(s *string) string {
 	return *s
 }
 
+// StringValueFallback is a utility function converting a converting a *string to a string with a fallback value
 func StringValueFallback(s *string, fb string) string {
 	if s == nil {
 		return fb
@@ -119,10 +126,12 @@ func StringValueFallback(s *string, fb string) string {
 	return *s
 }
 
+// Int is a utility function converting an int to an int pointer
 func Int(i int) *int {
 	return &i
 }
 
+// IntValue is a utility function converting an *int32 to a value
 func IntValue(i *int) int {
 	if i == nil {
 		return 0
@@ -130,6 +139,7 @@ func IntValue(i *int) int {
 	return *i
 }
 
+// Int32 is a utility function converting an int32 to a pointer
 func Int32(i int32) *int32 {
 	return &i
 }

@@ -19,9 +19,7 @@ package postgres
 import (
 	"strings"
 
-	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 	"github.com/google/uuid"
-
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,15 +33,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
+	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 )
 
 const (
 	errGetPasswordSecretFailed = "cannot get password secret"
-	NamespacePrefixOpenShift   = "openshift-"
-	DefaultPostgresPort        = 5432
-	PostgresImageTag           = "postgres:13.0"
+	// DefaultPostgresPort is the default port for postgres
+	DefaultPostgresPort = 5432
+	// ImageTagPostgres is the tag for the default postgres image used
+	ImageTagPostgres = "postgres:13.0"
 )
 
+// Client is the interface for the postgres client
 type Client interface {
 	CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error)
 	ParseInputSecret(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
@@ -101,16 +102,19 @@ func (c postgresClient) DeletePostgresService(ctx context.Context, postgres *v1a
 	return c.kube.Delete(ctx, &svc)
 }
 
+// NewRoleClient creates the postgres client with interface
 func NewRoleClient(kube client.Client) Client {
 	return postgresClient{kube: kube}
 }
 
+// CreateOrUpdate parses the secret to get the database password
 func (c postgresClient) CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error) {
 	return controllerutil.CreateOrUpdate(ctx, c.kube, obj, func() error {
 		return nil
 	})
 }
 
+// ParseInputSecret parses the secret to get the database password
 func (c postgresClient) ParseInputSecret(ctx context.Context, postgres v1alpha1.Postgres) (string, error) {
 	if postgres.Spec.ForProvider.MasterPasswordSecretRef == nil {
 		return "", errors.New(errGetPasswordSecretFailed)
@@ -126,6 +130,7 @@ func (c postgresClient) ParseInputSecret(ctx context.Context, postgres v1alpha1.
 	return string(s.Data[postgres.Spec.ForProvider.MasterPasswordSecretRef.Key]), nil
 }
 
+// MakePVCPostgres creates the PersistentVolumeClaim
 func MakePVCPostgres(postgres *v1alpha1.Postgres) (*v1.PersistentVolumeClaim, error) {
 	fs := v1.PersistentVolumeFilesystem
 	quan, err := resource.ParseQuantity(postgres.Spec.ForProvider.DatabaseSize)
@@ -154,6 +159,7 @@ func MakePVCPostgres(postgres *v1alpha1.Postgres) (*v1.PersistentVolumeClaim, er
 	}, nil
 }
 
+// MakePostgresDeployment creates has the Deployment
 func MakePostgresDeployment(ps *v1alpha1.Postgres, pw string) *appsv1.Deployment {
 	depl := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -192,22 +198,15 @@ func MakePostgresDeployment(ps *v1alpha1.Postgres, pw string) *appsv1.Deployment
 			},
 		},
 	}
-	// required for restricted namespace
-	if strings.HasPrefix(ps.Namespace, NamespacePrefixOpenShift) {
-		userGroupId := int64(26)
-		depl.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
-			FSGroup:            &userGroupId,
-			SupplementalGroups: []int64{userGroupId},
-		}
-	}
 	return depl
 }
 
+// MakeDefaultPostgresPodContainers creates the container for the Deployment
 func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Container {
 	return []v1.Container{
 		{
 			Name:  ps.Name,
-			Image: PostgresImageTag,
+			Image: ImageTagPostgres,
 			Ports: []v1.ContainerPort{
 				{
 					ContainerPort: DefaultPostgresPort,
@@ -266,7 +265,7 @@ func MakeDefaultPostgresPodContainers(ps *v1alpha1.Postgres, pw string) []v1.Con
 	}
 }
 
-// create an environment variable referencing a secret
+// envVarFromValue creates the environment variable for the pods
 func envVarFromValue(envVarName, value string) v1.EnvVar {
 	return v1.EnvVar{
 		Name:  envVarName,
@@ -274,6 +273,7 @@ func envVarFromValue(envVarName, value string) v1.EnvVar {
 	}
 }
 
+// MakeDefaultPostgresService is responsible for creating the Service for postgres
 func MakeDefaultPostgresService(ps *v1alpha1.Postgres) *v1.Service {
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{

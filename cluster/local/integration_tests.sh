@@ -85,6 +85,7 @@ check_pods(){
         sleep 10
         "${KUBECTL}" get events -A
         sleep 20
+        echo "$pods"
         echo_error "unexpected number of pods"
         exit -1
     fi
@@ -271,7 +272,7 @@ check_pods 2
 echo_step "installing ${PROJECT_NAME} into \"${CROSSPLANE_NAMESPACE}\" namespace"
 
 INSTALL_YAML="$( cat <<EOF
-apiVersion: pkg.crossplane.io/v1alpha1
+apiVersion: pkg.crossplane.io/v1beta1
 kind: Provider
 metadata:
   name: "${PACKAGE_NAME}"
