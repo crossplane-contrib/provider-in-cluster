@@ -4,4 +4,8 @@ metadata:
   name: provider-in-cluster
 spec:
   credentials:
-    source: None
+    source: Secret
+    secretRef:
+      name: cluster-config
+      key: kubeconfig
+      namespace: default

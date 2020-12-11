@@ -4,8 +4,10 @@ metadata:
   name: my-project-quay
   namespace: default
 spec:
+  providerConfigRef:
+    name: provider-in-cluster
   forProvider:
     channel: stable
     operatorName: rh-quay-operator
     catalogSource: krishchow-catalog-source
-    catalogSourceNamespace: olm
+    catalogSourceNamespace: openshift-marketplace

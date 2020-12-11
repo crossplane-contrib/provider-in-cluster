@@ -22,14 +22,21 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	operaterv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
+	clients "github.com/crossplane-contrib/provider-in-cluster/pkg/client"
 )
 
 var _ Client = &operatorClient{}
+
+const (
+	errNewKubernetesClient = "cannot create new Kubernetes client"
+)
 
 // Client is the interface for the operator client
 type Client interface {
@@ -45,12 +52,21 @@ type Client interface {
 type operatorClient struct {
 	kube   client.Client
 	logger logging.Logger
-	client versioned.Interface
+	client olm.Interface
 }
 
 // NewClient creates the client for the openshift controller
-func NewClient(kube client.Client, logger logging.Logger, p versioned.Interface) Client {
-	return operatorClient{kube: kube, logger: logger, client: p}
+func NewClient(rc *rest.Config, logger logging.Logger) (Client, error) {
+	kube, err := clients.NewKubeClient(rc)
+	if err != nil {
+		return nil, errors.Wrap(err, errNewKubernetesClient)
+	}
+
+	cs, err := olm.NewForConfig(rc)
+	if err != nil {
+		return nil, err
+	}
+	return operatorClient{kube: kube, logger: logger, client: cs}, nil
 }
 
 func (o operatorClient) CreateOperator(ctx context.Context, op *v1alpha1.Operator) error {
@@ -72,17 +88,12 @@ func (o operatorClient) GetPackageManifest(ctx context.Context, op *v1alpha1.Ope
 }
 
 func (o operatorClient) ParsePackageManifest(op *v1alpha1.Operator, obj *operatorsv1.PackageManifest) *string {
-	var channel *operatorsv1.PackageChannel = nil
 	for _, v := range obj.Status.Channels {
 		if v.Name == op.Spec.ForProvider.Channel {
 			return &v.CurrentCSV
 		}
 	}
-	o.logger.Debug("ParsePackageManifest", "PM", obj)
-	if channel == nil {
-		return nil
-	}
-	return &channel.CurrentCSV
+	return nil
 }
 
 func (o operatorClient) CheckCSV(ctx context.Context, csv string, op *v1alpha1.Operator) (bool, bool) {

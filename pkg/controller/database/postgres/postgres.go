@@ -24,21 +24,20 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
 	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
+	clients "github.com/crossplane-contrib/provider-in-cluster/pkg/client"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/client/database/postgres"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 )
@@ -79,15 +78,29 @@ type connector struct {
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cfg, err := config.GetConfig()
+	cr, ok := mg.(*v1alpha1.Postgres)
+	if !ok {
+		return nil, errors.New(errUnexpectedObject)
+	}
+
+	c.logger.Debug("Connecting")
+
+	rc, err := clients.GetProviderConfigRC(ctx, cr, c.kube)
 	if err != nil {
 		return nil, err
 	}
-	cs, err := kubernetes.NewForConfig(cfg)
+
+	cs, err := kubernetes.NewForConfig(rc)
 	if err != nil {
 		return nil, err
 	}
-	return &external{client: c.newClientFn(c.kube), kube: c.kube, logger: c.logger, cs: cs}, nil
+
+	kube, err := client.New(rc, client.Options{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &external{client: c.newClientFn(kube), kube: kube, logger: c.logger, cs: cs}, nil
 }
 
 type external struct {
