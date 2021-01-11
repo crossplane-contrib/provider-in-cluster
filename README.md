@@ -15,13 +15,19 @@ The Provider-In-Cluster is designed to provision and configure resources in an a
 ## Installing
 
 You can install the most recent version of this Provider by running the following command:
-`kubectl crossplane install provider crossplane/provider-in-cluster:master`
+```bash
+kubectl crossplane install provider crossplane/provider-in-cluster:master
+```
 
 After installing, you will need a ProviderConfig to provide appropriate credentials for the operator. An example of how to achieve this can be found in the [examples directory](examples/).
 
 ## Getting Started
 
-There are examples of the supported resources under the [examples](examples/) folder. This includes the providerConfig, postgres and operator resources
+There are examples of the supported resources under the [examples](examples/) folder. This includes the providerConfig, postgres and operator resources.
+
+To run the provider-in-cluster, you first need to set up the ProviderConfig, which expects a secret which contains a valid Kubeconfig to access the cluster. 
+There is a [utility script](examples/kubeconfig.sh) to create the secret which expects a path to a Kubeconfig. After, you can create the 
+[provider-config](examples/provider-config.yaml). Now, you should be able to create any of the other resources made available by the provider-in-cluster.
 
 ### OLM
 
@@ -31,7 +37,7 @@ More detailed documentation can be found in the [OLM docs](docs/olm.md).
 
 ### Database
 
-Under the database package we currently support provisoning instances of Postgres.
+Under the database package we currently support provisioning instances of Postgres.
 
 More documentation on this can be found in the [database docs](docs/database.md).
 
