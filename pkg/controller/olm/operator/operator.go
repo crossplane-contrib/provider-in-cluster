@@ -21,21 +21,19 @@ import (
 	"fmt"
 	"strings"
 
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"github.com/pkg/errors"
-
 	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned"
+	"github.com/pkg/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/operator/v1alpha1"
+	clients "github.com/crossplane-contrib/provider-in-cluster/pkg/client"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/client/olm/operator"
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/utils"
 )
@@ -61,25 +59,32 @@ func SetupOperator(mgr ctrl.Manager, l logging.Logger) error {
 
 type connector struct {
 	kube        client.Client
-	newClientFn func(kube client.Client, logger logging.Logger, p olm.Interface) operator.Client
+	newClientFn func(config *rest.Config, logger logging.Logger) (operator.Client, error)
 	logger      logging.Logger
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cfg, err := config.GetConfig()
+	cr, ok := mg.(*v1alpha1.Operator)
+	if !ok {
+		return nil, errors.New(errUnexpectedObject)
+	}
+
+	c.logger.Debug("Connecting")
+
+	rc, err := clients.GetProviderConfigRC(ctx, cr, c.kube)
 	if err != nil {
 		return nil, err
 	}
-	cs, err := olm.NewForConfig(cfg)
+
+	olmclient, err := c.newClientFn(rc, c.logger)
 	if err != nil {
 		return nil, err
 	}
-	return &external{client: c.newClientFn(c.kube, c.logger, cs), kube: c.kube, logger: c.logger}, nil
+	return &external{client: olmclient, logger: c.logger}, nil
 }
 
 type external struct {
 	client operator.Client
-	kube   client.Client
 	logger logging.Logger
 }
 
