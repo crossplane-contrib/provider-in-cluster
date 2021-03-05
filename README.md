@@ -1,6 +1,6 @@
-# provider-in-cluster
+# provider-in-cluster - v0.1.1
 
-## Note this Provider in early alpha, breaking changes may occur!
+## Note this Provider in early alpha, breaking changes may occur
 
 The Provider-In-Cluster is designed to provision and configure resources in an arbitrary Kubernetes cluster. These resources run inside of the cluster, and are also managed by the cluster.
 
