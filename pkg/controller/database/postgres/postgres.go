@@ -22,19 +22,21 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/client-go/kubernetes"
-
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/event"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
 	clients "github.com/crossplane-contrib/provider-in-cluster/pkg/client"
@@ -57,11 +59,14 @@ const (
 )
 
 // SetupPostgres adds a controller that reconciles Postgres instances.
-func SetupPostgres(mgr ctrl.Manager, l logging.Logger) error {
+func SetupPostgres(mgr ctrl.Manager, l logging.Logger, rl workqueue.RateLimiter) error {
 	name := managed.ControllerName(v1alpha1.PostgresGroupKind)
 	postgresLogger := l.WithValues("controller", name)
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
+		WithOptions(controller.Options{
+			RateLimiter: ratelimiter.NewDefaultManagedRateLimiter(rl),
+		}).
 		For(&v1alpha1.Postgres{}).
 		Complete(managed.NewReconciler(mgr,
 			resource.ManagedKind(v1alpha1.PostgresGroupVersionKind),

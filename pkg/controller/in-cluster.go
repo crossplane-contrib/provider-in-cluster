@@ -18,6 +18,7 @@ package controller
 
 import (
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane-contrib/provider-in-cluster/pkg/controller/config"
@@ -27,13 +28,13 @@ import (
 
 // Setup creates all in-cluster controllers with the supplied logger and adds
 // them to the supplied manager.
-func Setup(mgr ctrl.Manager, l logging.Logger) error {
-	for _, setup := range []func(ctrl.Manager, logging.Logger) error{
+func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.RateLimiter) error {
+	for _, setup := range []func(ctrl.Manager, logging.Logger, workqueue.RateLimiter) error{
 		config.Setup,
 		postgres.SetupPostgres,
 		operator.SetupOperator,
 	} {
-		if err := setup(mgr, l); err != nil {
+		if err := setup(mgr, l, rl); err != nil {
 			return err
 		}
 	}

@@ -21,7 +21,7 @@ spec:
     categories:
     - crossplane
     - managed
-    - aws
+    - incluster
     kind: Operator
     listKind: OperatorList
     plural: operators

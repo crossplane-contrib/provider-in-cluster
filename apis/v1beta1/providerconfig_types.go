@@ -19,17 +19,27 @@ package v1beta1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 // A ProviderConfigSpec defines the desired state of a ProviderConfig.
 type ProviderConfigSpec struct {
-	v1alpha1.ProviderConfigSpec `json:",inline"`
+	// Credentials required to authenticate to this provider.
+	Credentials ProviderCredentials `json:"credentials"`
+}
+
+// ProviderCredentials required to authenticate.
+type ProviderCredentials struct {
+	// Source of the provider credentials.
+	// +kubebuilder:validation:Enum=None;Secret;InjectedIdentity;Environment;Filesystem
+	Source v1.CredentialsSource `json:"source"`
+
+	v1.CommonCredentialSelectors `json:",inline"`
 }
 
 // A ProviderConfigStatus represents the status of a ProviderConfig.
 type ProviderConfigStatus struct {
-	v1alpha1.ProviderConfigStatus `json:",inline"`
+	v1.ProviderConfigStatus `json:",inline"`
 }
 
 // +kubebuilder:object:root=true
@@ -69,7 +79,7 @@ type ProviderConfigUsage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	v1alpha1.ProviderConfigUsage `json:",inline"`
+	v1.ProviderConfigUsage `json:",inline"`
 }
 
 // +kubebuilder:object:root=true

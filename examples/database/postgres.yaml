@@ -6,7 +6,7 @@ spec:
   forProvider:
     database: "test"
     databaseSize: "1Gi"
-    storageClass: "manual"
+    storageClass: "standard"
     masterUsername: "testuser"
   providerConfigRef:
     name: "provider-in-cluster"

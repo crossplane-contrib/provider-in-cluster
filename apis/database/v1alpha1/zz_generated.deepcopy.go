@@ -21,7 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	"github.com/crossplane/crossplane-runtime/apis/common/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -124,7 +124,7 @@ func (in *PostgresParameters) DeepCopyInto(out *PostgresParameters) {
 	}
 	if in.MasterPasswordSecretRef != nil {
 		in, out := &in.MasterPasswordSecretRef, &out.MasterPasswordSecretRef
-		*out = new(corev1alpha1.SecretKeySelector)
+		*out = new(v1.SecretKeySelector)
 		**out = **in
 	}
 }

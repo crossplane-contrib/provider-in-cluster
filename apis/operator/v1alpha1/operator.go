@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	v1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,13 +22,13 @@ type OperatorParameters struct {
 
 // An OperatorSpec defines the desired state of an Operator.
 type OperatorSpec struct {
-	runtimev1alpha1.ResourceSpec `json:",inline"`
-	ForProvider                  OperatorParameters `json:"forProvider"`
+	v1.ResourceSpec `json:",inline"`
+	ForProvider     OperatorParameters `json:"forProvider"`
 }
 
 // An OperatorStatus represents the observed state of an Operator.
 type OperatorStatus struct {
-	runtimev1alpha1.ResourceStatus `json:",inline"`
+	v1.ResourceStatus `json:",inline"`
 }
 
 // +kubebuilder:object:root=true
@@ -38,7 +38,7 @@ type OperatorStatus struct {
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,aws}
+// +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,incluster}
 type Operator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
