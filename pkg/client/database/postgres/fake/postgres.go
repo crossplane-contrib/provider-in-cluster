@@ -19,7 +19,7 @@ package fake
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/crossplane-contrib/provider-in-cluster/apis/database/v1alpha1"
@@ -30,7 +30,7 @@ var _ postgres.Client = &MockPostgresClient{}
 
 // MockPostgresClient is the mock client for the postgres client
 type MockPostgresClient struct {
-	MockCreateOrUpdate           func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error)
+	MockCreateOrUpdate           func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error)
 	MockParseInputSecret         func(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
 	MockDeletePostgresPVC        func(ctx context.Context, postgres *v1alpha1.Postgres) error
 	MockDeletePostgresDeployment func(ctx context.Context, postgres *v1alpha1.Postgres) error
@@ -64,6 +64,6 @@ func (c MockPostgresClient) DeletePostgresService(ctx context.Context, postgres 
 }
 
 // CreateOrUpdate calls the MockCreateOrUpdate fake function
-func (c MockPostgresClient) CreateOrUpdate(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+func (c MockPostgresClient) CreateOrUpdate(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 	return c.MockCreateOrUpdate(ctx, postgres)
 }

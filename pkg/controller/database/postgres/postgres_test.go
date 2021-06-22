@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"testing"
 
-	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/core/v1alpha1"
+	runtimev1alpha1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
@@ -32,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -150,7 +149,7 @@ func TestObserve(t *testing.T) {
 		"ClientErrorDeployment": {
 			args: args{
 				kube: &test.MockClient{
-					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+					MockGet: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 						return errBoom
 					},
 				},
@@ -164,7 +163,7 @@ func TestObserve(t *testing.T) {
 		"DeploymentNotReady": {
 			args: args{
 				kube: &test.MockClient{
-					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+					MockGet: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 						return nil
 					},
 				},
@@ -179,7 +178,7 @@ func TestObserve(t *testing.T) {
 		"ClientErrorService": {
 			args: args{
 				kube: &test.MockClient{
-					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+					MockGet: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 						switch reflect.TypeOf(obj).String() {
 						case deployment:
 							dpl := obj.(*appsv1.Deployment)
@@ -208,7 +207,7 @@ func TestObserve(t *testing.T) {
 		"ValidInput": {
 			args: args{
 				kube: &test.MockClient{
-					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+					MockGet: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 						switch reflect.TypeOf(obj).String() {
 						case deployment:
 							dpl := obj.(*appsv1.Deployment)
@@ -241,7 +240,7 @@ func TestObserve(t *testing.T) {
 		"ValidInputLateInit": {
 			args: args{
 				kube: &test.MockClient{
-					MockGet: func(ctx context.Context, key client.ObjectKey, obj runtime.Object) error {
+					MockGet: func(ctx context.Context, key client.ObjectKey, obj client.Object) error {
 						switch reflect.TypeOf(obj).String() {
 						case deployment:
 							dpl := obj.(*appsv1.Deployment)
@@ -319,7 +318,7 @@ func TestCreate(t *testing.T) {
 		"ClientError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						return controllerutil.OperationResultNone, errBoom
 					},
 				},
@@ -333,7 +332,7 @@ func TestCreate(t *testing.T) {
 		"SizeInvalidError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						return controllerutil.OperationResultNone, errBoom
 					},
 				},
@@ -347,7 +346,7 @@ func TestCreate(t *testing.T) {
 		"GeneratePasswordError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						return controllerutil.OperationResultNone, nil
 					},
 					MockParseInputSecret: func(ctx context.Context, postgres v1alpha1.Postgres) (string, error) {
@@ -367,7 +366,7 @@ func TestCreate(t *testing.T) {
 		"DeployClientGenerateError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
 						case deployment:
 							return controllerutil.OperationResultNone, errBoom
@@ -394,7 +393,7 @@ func TestCreate(t *testing.T) {
 		"DeployClientNoGenerateError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
 						case deployment:
 							return controllerutil.OperationResultNone, errBoom
@@ -418,7 +417,7 @@ func TestCreate(t *testing.T) {
 		"SVCClientError": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						switch reflect.TypeOf(postgres).String() {
 						case deployment:
 							return controllerutil.OperationResultNone, nil
@@ -445,7 +444,7 @@ func TestCreate(t *testing.T) {
 		"ValidInput": {
 			args: args{
 				pg: &fake.MockPostgresClient{
-					MockCreateOrUpdate: func(ctx context.Context, postgres runtime.Object) (controllerutil.OperationResult, error) {
+					MockCreateOrUpdate: func(ctx context.Context, postgres client.Object) (controllerutil.OperationResult, error) {
 						return controllerutil.OperationResultCreated, nil
 					},
 					MockParseInputSecret: func(ctx context.Context, postgres v1alpha1.Postgres) (string, error) {

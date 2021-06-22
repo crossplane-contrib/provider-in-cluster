@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +45,7 @@ const (
 
 // Client is the interface for the postgres client
 type Client interface {
-	CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error)
+	CreateOrUpdate(ctx context.Context, obj client.Object) (controllerutil.OperationResult, error)
 	ParseInputSecret(ctx context.Context, postgres v1alpha1.Postgres) (string, error)
 	DeletePostgresPVC(ctx context.Context, postgres *v1alpha1.Postgres) error
 	DeletePostgresDeployment(ctx context.Context, postgres *v1alpha1.Postgres) error
@@ -108,7 +107,7 @@ func NewRoleClient(kube client.Client) Client {
 }
 
 // CreateOrUpdate parses the secret to get the database password
-func (c postgresClient) CreateOrUpdate(ctx context.Context, obj runtime.Object) (controllerutil.OperationResult, error) {
+func (c postgresClient) CreateOrUpdate(ctx context.Context, obj client.Object) (controllerutil.OperationResult, error) {
 	return controllerutil.CreateOrUpdate(ctx, c.kube, obj, func() error {
 		return nil
 	})
